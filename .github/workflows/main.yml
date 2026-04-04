@@ -1,0 +1,37 @@
+name: Apartment Hunter
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r scraper/requirements.txt
+
+      - name: Run scraper
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: python scraper/scraper.py
+
+      - name: Commit updated data
+        run: |
+          git config user.name "apartment-bot"
+          git config user.email "bot@apartment-hunter"
+          git add data/
+          git diff --staged --quiet || git commit -m "🏠 Update apartments $(date +'%d/%m %H:%M')"
+          git push
